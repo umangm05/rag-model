@@ -2,7 +2,7 @@
 
 A comprehensive RAG (Retrieval-Augmented Generation) application built with Next.js frontend, Python FastAPI backend, and Docker Compose orchestration.
 
-## 🚀 Features
+## 🚀 Featuress
 
 - **Modern Frontend**: Next.js with TypeScript and Tailwind CSS
 - **Powerful Backend**: Python FastAPI with comprehensive RAG functionality
