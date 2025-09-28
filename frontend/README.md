@@ -1,36 +1,150 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RAG Document Assistant - Frontend
+
+A modern React/Next.js frontend application for uploading documents and chatting with AI about their content.
+
+## Features
+
+- **File Upload**: Drag and drop or click to upload documents with progress tracking
+- **Chat Interface**: Real-time chat with AI assistant about uploaded documents
+- **Responsive Design**: Two-column layout that adapts to different screen sizes
+- **Modern UI**: Built with shadcn/ui components and Tailwind CSS
+- **Mock APIs**: Complete mock implementation for development
+
+## Tech Stack
+
+- **Framework**: Next.js 15 with React 19
+- **Styling**: Tailwind CSS v4
+- **UI Components**: shadcn/ui v4
+- **Icons**: Lucide React
+- **TypeScript**: Full type safety
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 18+ 
+- npm or yarn
+
+### Installation
+
+1. Install dependencies:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Set up environment variables:
+```bash
+cp env.example .env.local
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Edit `.env.local` with your configuration:
+```env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+NEXT_PUBLIC_API_VERSION=v1
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+3. Start the development server:
+```bash
+npm run dev
+```
 
-## Learn More
+4. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-To learn more about Next.js, take a look at the following resources:
+## Project Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+src/
+├── app/                    # Next.js app directory
+│   ├── globals.css        # Global styles
+│   ├── layout.tsx         # Root layout
+│   └── page.tsx           # Home page
+├── components/            # React components
+│   ├── ui/               # shadcn/ui components
+│   ├── file-upload.tsx   # File upload component
+│   └── chat-interface.tsx # Chat interface component
+└── lib/                  # Utilities and API
+    ├── api.ts           # Mock API functions
+    ├── constants.ts     # API endpoints and constants
+    └── utils.ts         # Utility functions
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## API Integration
 
-## Deploy on Vercel
+The application is designed to work with a backend API. Currently, it uses mock implementations:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### File Upload API
+- `POST /api/v1/files/upload` - Upload files
+- `GET /api/v1/files` - List uploaded files
+- `DELETE /api/v1/files/:id` - Delete a file
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Chat API
+- `POST /api/v1/chat/message` - Send a message
+- `GET /api/v1/chat/messages` - Get chat history
+
+### Replacing Mock APIs
+
+To integrate with a real backend:
+
+1. Update the API base URL in your environment variables
+2. Replace the mock functions in `src/lib/api.ts` with actual HTTP requests
+3. Update types if needed based on your backend response format
+
+## File Upload Configuration
+
+Supported file types:
+- PDF documents
+- Text files (.txt)
+- Word documents (.doc, .docx)
+- CSV files
+- JSON files
+
+Maximum file size: 10MB
+
+## Development
+
+### Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+
+### Code Standards
+
+- TypeScript for type safety
+- ESLint for code quality
+- Tailwind CSS for styling
+- Component-based architecture
+- Proper error handling and loading states
+
+## Deployment
+
+1. Build the application:
+```bash
+npm run build
+```
+
+2. Start the production server:
+```bash
+npm start
+```
+
+Or deploy to platforms like Vercel, Netlify, or any Node.js hosting service.
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `NEXT_PUBLIC_API_BASE_URL` | Backend API base URL | `http://localhost:8000` |
+| `NEXT_PUBLIC_API_VERSION` | API version | `v1` |
+
+## Contributing
+
+1. Follow the existing code style
+2. Add TypeScript types for new features
+3. Test components thoroughly
+4. Update documentation as needed
+
+## License
+
+This project is part of the RAG Model application.
