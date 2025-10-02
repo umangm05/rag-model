@@ -66,3 +66,4 @@ The backend is structured with separate route files:
 
 Files are stored in the `uploads/` directory (created automatically).
 
+
