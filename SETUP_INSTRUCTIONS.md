@@ -65,3 +65,4 @@ Once the backend is running, visit `http://localhost:8000/docs` for interactive 
 - **File Upload Issues:** Check file size (max 10MB) and file type support
 - **Connection Issues:** Verify the API_BASE_URL in frontend constants matches your backend URL
 
+
