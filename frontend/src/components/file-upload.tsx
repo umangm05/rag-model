@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState, useCallback, useRef } from 'react';
-import { Upload, File, Trash2, AlertCircle, CheckCircle } from 'lucide-react';
+import { Upload, File, Trash2, AlertCircle, CheckCircle, Clock, Loader2, FileText, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { uploadFile, getUploadedFiles, deleteFile, type UploadedFile, type UploadProgress } from '@/lib/api';
+import { uploadFile, getUploadedFiles, deleteFile, getFileStatus, type UploadedFile, type UploadProgress } from '@/lib/api';
 import { FILE_UPLOAD } from '@/lib/constants';
 
 interface FileUploadProps {
@@ -18,11 +18,36 @@ export function FileUpload({ onFilesChange }: FileUploadProps) {
   const [uploadingFiles, setUploadingFiles] = useState<Map<string, number>>(new Map());
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load files on component mount
   React.useEffect(() => {
     loadFiles();
   }, []);
+
+  // Poll for status updates for files that are not completed
+  React.useEffect(() => {
+    const hasProcessingFiles = files.some(file => 
+      ['uploaded', 'queued', 'processing', 'parsing', 'embedding'].includes(file.status)
+    );
+
+    if (hasProcessingFiles) {
+      pollingIntervalRef.current = setInterval(() => {
+        loadFiles();
+      }, 2000); // Poll every 2 seconds
+    } else {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    }
+
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, [files]);
 
   const loadFiles = async () => {
     try {
@@ -108,10 +133,41 @@ export function FileUpload({ onFilesChange }: FileUploadProps) {
     switch (status) {
       case 'completed':
         return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'error':
+      case 'failed':
         return <AlertCircle className="h-4 w-4 text-red-500" />;
+      case 'uploaded':
+        return <Upload className="h-4 w-4 text-blue-500" />;
+      case 'queued':
+        return <Clock className="h-4 w-4 text-yellow-500" />;
+      case 'processing':
+        return <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />;
+      case 'parsing':
+        return <FileText className="h-4 w-4 text-orange-500" />;
+      case 'embedding':
+        return <Database className="h-4 w-4 text-purple-500" />;
       default:
         return null;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'text-green-600';
+      case 'failed':
+        return 'text-red-600';
+      case 'uploaded':
+        return 'text-blue-600';
+      case 'queued':
+        return 'text-yellow-600';
+      case 'processing':
+        return 'text-blue-600';
+      case 'parsing':
+        return 'text-orange-600';
+      case 'embedding':
+        return 'text-purple-600';
+      default:
+        return 'text-gray-600';
     }
   };
 
@@ -200,6 +256,24 @@ export function FileUpload({ onFilesChange }: FileUploadProps) {
                         <p className="text-xs text-muted-foreground">
                           {formatFileSize(file.size)} • {file.uploadedAt.toLocaleDateString()}
                         </p>
+                        {file.message && (
+                          <p className={`text-xs ${getStatusColor(file.status)}`}>
+                            {file.message}
+                          </p>
+                        )}
+                        {file.error && (
+                          <p className="text-xs text-red-600">
+                            Error: {file.error}
+                          </p>
+                        )}
+                        {['uploaded', 'queued', 'processing', 'parsing', 'embedding'].includes(file.status) && (
+                          <div className="mt-1">
+                            <Progress value={file.progress} className="h-1" />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {file.progress}% complete
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
