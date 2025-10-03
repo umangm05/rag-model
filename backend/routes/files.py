@@ -5,6 +5,11 @@ from typing import List
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.responses import JSONResponse
 import shutil
+import logging
+from services.queue_service import queue_service
+from services.status_service import status_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/files", tags=["files"])
 
@@ -73,12 +78,59 @@ async def upload_file(file: UploadFile = File(...)):
             "size": file_size,
             "type": file.content_type,
             "uploadedAt": datetime.now().isoformat(),
-            "status": "completed",
-            "progress": 100,
+            "status": "uploaded",
+            "progress": 0,
             "path": file_path
         }
         
         uploaded_files_db[file_id] = file_metadata
+        
+        # Initialize status tracking
+        status_service.update_file_status(
+            file_id=file_id,
+            status="uploaded",
+            progress=0,
+            message="File uploaded successfully"
+        )
+        
+        # Enqueue file for processing
+        try:
+            queue_data = {
+                "file_id": file_id,
+                "file_path": file_path,
+                "file_name": file.filename,
+                "file_type": file.content_type,
+                "file_size": file_size
+            }
+            
+            success = queue_service.publish_file_processing_task(queue_data)
+            if success:
+                status_service.update_file_status(
+                    file_id=file_id,
+                    status="queued",
+                    progress=5,
+                    message="File queued for processing"
+                )
+                logger.info(f"File {file.filename} queued for processing")
+            else:
+                status_service.update_file_status(
+                    file_id=file_id,
+                    status="failed",
+                    progress=0,
+                    message="Failed to queue file for processing",
+                    error="Queue service unavailable"
+                )
+                logger.error(f"Failed to queue file {file.filename} for processing")
+                
+        except Exception as e:
+            logger.error(f"Error queuing file {file.filename}: {e}")
+            status_service.update_file_status(
+                file_id=file_id,
+                status="failed",
+                progress=0,
+                message="Failed to queue file for processing",
+                error=str(e)
+            )
         
         return JSONResponse(
             status_code=200,
@@ -103,18 +155,26 @@ async def upload_file(file: UploadFile = File(...)):
 
 @router.get("")
 async def get_files():
-    """Get list of uploaded files"""
+    """Get list of uploaded files with current processing status"""
     files = []
     for file_data in uploaded_files_db.values():
-        files.append({
+        file_id = file_data["id"]
+        
+        # Get current status from status service
+        status_info = status_service.get_file_status(file_id)
+        
+        file_info = {
             "id": file_data["id"],
             "name": file_data["name"],
             "size": file_data["size"],
             "type": file_data["type"],
             "uploadedAt": file_data["uploadedAt"],
-            "status": file_data["status"],
-            "progress": file_data["progress"]
-        })
+            "status": status_info.get("status", "unknown") if status_info else "unknown",
+            "progress": status_info.get("progress", 0) if status_info else 0,
+            "message": status_info.get("message", "") if status_info else "",
+            "error": status_info.get("error") if status_info else None
+        }
+        files.append(file_info)
     
     return {"files": files}
 
@@ -135,9 +195,37 @@ async def delete_file(file_id: str):
         # Remove from database
         del uploaded_files_db[file_id]
         
+        # Remove from status tracking
+        status_service.delete_file_status(file_id)
+        
         return {"message": "File deleted successfully"}
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
+
+@router.get("/{file_id}/status")
+async def get_file_status(file_id: str):
+    """Get the current processing status of a specific file"""
+    if file_id not in uploaded_files_db:
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    status_info = status_service.get_file_status(file_id)
+    if not status_info:
+        raise HTTPException(status_code=404, detail="Status not found for file")
+    
+    return {
+        "file_id": file_id,
+        "status": status_info["status"],
+        "progress": status_info["progress"],
+        "message": status_info["message"],
+        "error": status_info.get("error"),
+        "updated_at": status_info["updated_at"]
+    }
+
+@router.get("/status/all")
+async def get_all_file_statuses():
+    """Get processing status of all files"""
+    all_statuses = status_service.get_all_file_statuses()
+    return {"statuses": all_statuses}
 
 
