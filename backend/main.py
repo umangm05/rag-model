@@ -2,6 +2,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes.files import router as files_router
 from routes.chat import router as chat_router
+from dotenv import load_dotenv
+import os
+
+# Ensure environment variables are loaded when app module is imported (not only via run.py)
+load_dotenv()
 
 app = FastAPI(
     title="RAG Model API",
@@ -10,9 +15,11 @@ app = FastAPI(
 )
 
 # Configure CORS
+allowed_origins = os.getenv("CORS_ALLOW_ORIGINS", "http://localhost:3000").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Frontend URL
+    allow_origins=[origin.strip() for origin in allowed_origins if origin.strip()],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
