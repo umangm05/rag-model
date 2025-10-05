@@ -102,3 +102,4 @@ class FileProcessor:
 
 # Global file processor instance
 file_processor = FileProcessor()
+

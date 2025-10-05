@@ -69,3 +69,4 @@ class StatusService:
 
 # Global status service instance
 status_service = StatusService()
+
