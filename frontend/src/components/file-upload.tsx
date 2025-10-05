@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState, useCallback, useRef } from 'react';
-import { Upload, File, Trash2, AlertCircle, CheckCircle, Clock, Loader2, FileText, Database } from 'lucide-react';
+import { Upload, Trash2, AlertCircle, CheckCircle, Clock, Loader2, FileText, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { uploadFile, getUploadedFiles, deleteFile, getFileStatus, type UploadedFile, type UploadProgress } from '@/lib/api';
+import { uploadFile, getUploadedFiles, deleteFile, type UploadedFile, type UploadProgress } from '@/lib/api';
 import { FILE_UPLOAD } from '@/lib/constants';
 
 interface FileUploadProps {
@@ -20,10 +20,20 @@ export function FileUpload({ onFilesChange }: FileUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  const loadFiles = useCallback(async () => {
+    try {
+      const uploadedFiles = await getUploadedFiles();
+      setFiles(uploadedFiles);
+      onFilesChange?.(uploadedFiles);
+    } catch (error) {
+      console.error('Failed to load files:', error);
+    }
+  }, [onFilesChange]);
+
   // Load files on component mount
   React.useEffect(() => {
     loadFiles();
-  }, []);
+  }, [loadFiles]);
 
   // Poll for status updates for files that are not completed
   React.useEffect(() => {
@@ -47,17 +57,7 @@ export function FileUpload({ onFilesChange }: FileUploadProps) {
         clearInterval(pollingIntervalRef.current);
       }
     };
-  }, [files]);
-
-  const loadFiles = async () => {
-    try {
-      const uploadedFiles = await getUploadedFiles();
-      setFiles(uploadedFiles);
-      onFilesChange?.(uploadedFiles);
-    } catch (error) {
-      console.error('Failed to load files:', error);
-    }
-  };
+  }, [files, loadFiles]);
 
   const handleFileSelect = useCallback((selectedFiles: FileList | null) => {
     if (!selectedFiles) return;
@@ -85,7 +85,7 @@ export function FileUpload({ onFilesChange }: FileUploadProps) {
         });
       }
     });
-  }, []);
+  }, [loadFiles]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
