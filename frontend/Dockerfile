@@ -15,8 +15,15 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Ensure proper permissions and build context
+RUN chown -R node:node /app
+USER node
+
 # Build the application
 RUN npm run build
+
+# Verify the build was successful
+RUN ls -la .next/
 
 # Production image, copy all the files and run next
 FROM base AS runner
